@@ -22,5 +22,8 @@
   "homepage": "https://github.com/tahatsahin/photo_upload_website#readme",
   "devDependencies": {
     "prettier": "2.7.1"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
   }
 }
