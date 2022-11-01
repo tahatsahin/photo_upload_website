@@ -8,6 +8,7 @@ import fs from 'fs';
 import Photo from './models/Photo.js';
 
 const app = express();
+const __dirname = path.resolve();
 
 // connect db
 mongoose.connect('mongodb://127.0.0.1:27017/pcat-test-db', {
@@ -28,8 +29,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 // image upload middleware
 app.use(fileUpload());
-// need to override POST to make PUT req
-app.use(methodOverride('_method'));
+// override POST and GET methods
+app.use(
+	methodOverride('_method', {
+		methods: ['POST', 'GET'],
+	})
+);
 
 // routes
 app.get('/', async (req, res) => {
@@ -39,7 +44,7 @@ app.get('/', async (req, res) => {
 	}); // serve index.ejs in views folder
 });
 app.get('/photos/:id', async (req, res) => {
-	// reading id from query
+	// reading id from query with req.params.id
 	const photo = await Photo.findById(req.params.id); // db read is async
 	res.render('photo', {
 		photo,
@@ -64,6 +69,13 @@ app.put('/photos/:id', async (req, res) => {
 	photo.save();
 	res.redirect(`/photos/${req.params.id}`);
 });
+app.delete('/photos/:id', async (req, res) => {
+	const photo = await Photo.findById(req.params.id);
+	let deletedImage = __dirname + '/public' + photo.image;
+	fs.unlinkSync(deletedImage);
+	await photo.deleteOne();
+	res.redirect('/');
+});
 // photos is the enpoint that is set in the add.ejs file. this part is async...
 app.post('/photos', async (req, res) => {
 	// check if the directory exists, if not, create
@@ -75,7 +87,6 @@ app.post('/photos', async (req, res) => {
 	// get image info
 	let uploadedImage = req.files.image;
 	// create the path for images
-	const __dirname = path.resolve();
 	let uploadPath = __dirname + '/public/uploads/' + uploadedImage.name;
 
 	uploadedImage.mv(uploadPath, async () => {
