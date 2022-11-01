@@ -1,7 +1,9 @@
 import express from 'express'; // use import instead of require
 import mongoose from 'mongoose';
+import fileUpload from 'express-fileupload';
 import ejs from 'ejs';
 import path from 'path';
+import fs from 'fs';
 import Photo from './models/Photo.js';
 
 const app = express();
@@ -21,12 +23,14 @@ app.use(express.static('public'));
 // urlencoded is a method to recognize the incoming Request Object as strings or arrays
 app.use(express.urlencoded({ extended: true }));
 // json is a method to recognize the incoming Request Object as a JSON object
-app.use(express.json());
 // body parser can be used alternatively (body-barser.json() + body-parser.urlencoded)
+app.use(express.json());
+// image upload middleware
+app.use(fileUpload());
 
 // routes
 app.get('/', async (req, res) => {
-	const photos = await Photo.find({}); // db read is async
+	const photos = await Photo.find({}).sort('-dateCreated'); // db read is async
 	res.render('index', {
 		photos,
 	}); // serve index.ejs in views folder
@@ -46,8 +50,25 @@ app.get('/add', (req, res) => {
 });
 // photos is the enpoint that is set in the add.ejs file. this part is async...
 app.post('/photos', async (req, res) => {
-	await Photo.create(req.body);
-	res.redirect('/');
+	// check if the directory exists, if not, create
+	const uploadDir = 'public/uploads';
+	if (!fs.existsSync(uploadDir)) {
+		fs.mkdirSync(uploadDir);
+	}
+
+	// get image info
+	let uploadedImage = req.files.image;
+	// create the path for images
+	const __dirname = path.resolve();
+	let uploadPath = __dirname + '/public/uploads/' + uploadedImage.name;
+
+	uploadedImage.mv(uploadPath, async () => {
+		await Photo.create({
+			...req.body,
+			image: '/uploads/' + uploadedImage.name,
+		});
+		res.redirect('/');
+	});
 });
 
 const PORT = 8080;
