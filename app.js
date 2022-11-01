@@ -9,10 +9,20 @@ import pageController from './controllers/pageController.js';
 const app = express();
 
 // connect db
-mongoose.connect('mongodb://127.0.0.1:27017/pcat-test-db', {
-	useNewUrlParser: true,
-	useUnifiedTopology: true,
-});
+mongoose
+	.connect(
+		'mongodb+srv://tahatsahin:ahNkgDdOZF1eWi1g@cluster0.tdgqbs8.mongodb.net/pcat-db?retryWrites=true&w=majority',
+		{
+			useNewUrlParser: true,
+			useUnifiedTopology: true,
+		}
+	)
+	.then(() => {
+		console.log('db connected');
+	})
+	.catch((err) => {
+		console.log(err);
+	});
 
 // template engine
 app.set('view engine', 'ejs'); // use ejs as template engine
@@ -45,7 +55,7 @@ app.get('/about', pageController.getAboutPage);
 app.get('/add', pageController.getAddPage);
 app.get('/photos/edit/:id', pageController.getEditPage);
 
-const PORT = 8080;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
 	console.log(`start server on port ${PORT}`);
 });
