@@ -1,6 +1,7 @@
 import express from 'express'; // use import instead of require
 import mongoose from 'mongoose';
 import fileUpload from 'express-fileupload';
+import methodOverride from 'method-override';
 import ejs from 'ejs';
 import path from 'path';
 import fs from 'fs';
@@ -27,6 +28,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 // image upload middleware
 app.use(fileUpload());
+// need to override POST to make PUT req
+app.use(methodOverride('_method'));
 
 // routes
 app.get('/', async (req, res) => {
@@ -47,6 +50,19 @@ app.get('/about', (req, res) => {
 });
 app.get('/add', (req, res) => {
 	res.render('add');
+});
+app.get('/photos/edit/:id', async (req, res) => {
+	const photo = await Photo.findById(req.params.id); // db read is async
+	res.render('edit', {
+		photo,
+	});
+});
+app.put('/photos/:id', async (req, res) => {
+	const photo = await Photo.findById(req.params.id);
+	photo.title = req.body.title;
+	photo.description = req.body.description;
+	photo.save();
+	res.redirect(`/photos/${req.params.id}`);
 });
 // photos is the enpoint that is set in the add.ejs file. this part is async...
 app.post('/photos', async (req, res) => {
